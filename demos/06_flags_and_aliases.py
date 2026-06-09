@@ -78,10 +78,24 @@ class WorkerApp(Application):
         print(f"  verbose = {worker.verbose}")
 
 
+"""
+当你调用 WorkerApp.launch_instance() 时，内部会依次执行以下几个步骤：
+
+1. 解析命令行参数 — 读取 sys.argv ，识别其中定义的 flags （如 --verbose 、 --debug ）、 aliases （如 --worker-name 、 --threads ）以及完整的 --Class.trait=value 格式参数。
+2. 应用配置 — 将解析出的参数值注入到对应的 Configurable 对象（这里是 Worker ）的 trait 属性上。
+3. 创建实例 — 实例化 WorkerApp 。
+4. 调用生命周期方法 ：
+   - initialize() — 初始化应用
+   - start() — 启动应用（即你在类中定义的 start 方法，输出 Worker 的配置信息）
+"""
 if __name__ == "__main__":
     # 演示不同的命令行参数场景
+    # 有命令行参数时，正式启动应用
     if len(sys.argv) > 1:
+      # 虽然代码里写的是 WorkerApp.launch_instance() ，看起来什么参数都没传，
+      # 但实际上 参数是自动从 sys.argv 读取的 。
         WorkerApp.launch_instance()
+    # 没有命令行参数时，显示帮助信息
     else:
         print("=" * 60)
         print("Demo 6: Flags 与 Aliases")
