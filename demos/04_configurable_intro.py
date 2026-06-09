@@ -151,7 +151,6 @@ print_config(cfg2)
 # Cat 的名仍是 "通用动物" —— 来自父类 Animal 的配置
 print(f"Cat: name={cat.name!r} (仍来自父类 Animal 配置)")
 
-exit(0)
 # ============================================================
 # 示例 4: update_config() 运行时更新配置
 # ============================================================
@@ -170,10 +169,10 @@ print(f"更新后: host={db4.host!r}, port={db4.port}")
 
 
 # ============================================================
-# 示例 5: 嵌套 Configurable
+# 示例 5: 嵌套 Configurable 类 —— 组合配置
 # ============================================================
 print("\n" + "=" * 60)
-print("示例 5: 嵌套 Configurable")
+print("示例 5: 嵌套 Configurable 类 —— 组合配置")
 print("=" * 60)
 
 
@@ -181,14 +180,20 @@ class CacheConfig(Configurable):
     backend = Unicode("redis", help="缓存后端").tag(config=True)
     ttl = Int(3600, help="过期时间(秒)").tag(config=True)
 
-
+# 继承和组合代表了两种截然不同的语义:
+# 继承: 子类自动继承父类的配置, 适合于配置的继承关系。
+# 组合: 将一个 Configurable 作为另一个的属性，适合 "has-a" 关系
+# 如果继承：WebApp 就是 一种缓存配置
+# 如果组合：WebApp 拥有 一个缓存配置，而不是直接继承 CacheConfig
 class WebAppConfig(Configurable):
     name = Unicode("myapp", help="应用名称").tag(config=True)
     port = Int(8080, help="监听端口").tag(config=True)
 
     def __init__(self, **kwargs):
+        # 先初始化父类 Configurable，处理自身的 trait 配置
         super().__init__(**kwargs)
-        self.cache = CacheConfig(config=self.config)
+        # 初始化嵌套的 CacheConfig，parent=self 自动继承 config 并建立父子关联
+        self.cache = CacheConfig(parent=self)
 
 
 cfg3 = Config()
@@ -197,6 +202,10 @@ cfg3.CacheConfig.ttl = 7200
 cfg3.WebAppConfig.name = "webapp-prod"
 cfg3.WebAppConfig.port = 443
 
+print_config(cfg3)
+
+# 外部调用方 创建顶层 WebAppConfig 实例
+# 用 config= 传入配置对象是正确且唯一的做法。
 app = WebAppConfig(config=cfg3)
 print(f"WebApp: name={app.name!r}, port={app.port}")
 print(f"嵌套 Cache: backend={app.cache.backend!r}, ttl={app.cache.ttl}")
