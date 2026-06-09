@@ -93,7 +93,7 @@ except TraitError as e:
     print(f"确认密码验证失败: {e}")
 
 try:
-    pf.password = "123"
+    pf.password = "123456"
 except TraitError as e:
     print(f"密码太短验证失败: {e}")
 
@@ -116,9 +116,11 @@ except TraitError as e:
     print(f"单独修改失败 (符合预期): {e}")
 
 # 使用 hold_trait_notifications 批量修改
+# 保持状态通知, 避免在批量修改时触发验证
 with pf2.hold_trait_notifications():
-    pf2.password = "newpwd123"
-    pf2.confirm_password = "newpwd123"
+    pf2.password = "newpwd123" # 不触发验证
+    pf2.confirm_password = "newpwd123" # 不触发验证
+# 离开上下文时触发验证
 
 print(f"批量修改后: password={pf2.password!r}, confirm={pf2.confirm_password!r}")
 
@@ -134,6 +136,7 @@ pf3 = PasswordForm(password="original", confirm_password="original")
 print(f"回滚前: password={pf3.password!r}, confirm={pf3.confirm_password!r}")
 
 try:
+    # hold_trait_notifications() 有内置的自动回滚功能
     with pf3.hold_trait_notifications():
         pf3.password = "newpass"
         pf3.confirm_password = "mismatch"  # 与 newpass 不一致
@@ -149,12 +152,17 @@ print(f"回滚后: password={pf3.password!r}, confirm={pf3.confirm_password!r}")
 # ============================================================
 class ConfigStore(HasTraits):
     settings = Dict(
+        # 单独定义每个键的 trait 类型
         per_key_traits={
             "host": Unicode(),
             "port": Int(),
             "debug": Bool(),
         },
-        default_value={"host": "localhost", "port": 8080, "debug": False},
+        default_value={
+            "host": "localhost", 
+            "port": 8080, 
+            "debug": False
+        },
     )
 
 
@@ -168,6 +176,9 @@ print(f"默认配置: {cs.settings}")
 cs.settings = {"host": "0.0.0.0", "port": 3000, "debug": True}
 print(f"修改后: {cs.settings}")
 
+# 示例 5 演示的是： per_key_traits 是持续生效的类型守卫，
+# 任何时候给 settings 赋新字典，traitlets 都会对每个 key 做类型校验，
+# 任何一个字段类型不符都会阻止整个赋值。
 try:
     cs.settings = {"host": "localhost", "port": "不是数字", "debug": False}
 except TraitError as e:
