@@ -72,11 +72,13 @@ c.Server.port = 3000
 main_py_config = """\
 c = get_config()  # noqa
 
-# 继承 base_config.py 的所有配置
+# 加载并合并 base_config.py 中的所有配置到当前 c 中
 load_subconfig("base_config.py")
 
-# 覆盖部分配置
+
+# 覆盖从 base 继承来的 name
 c.Server.name = "main-server"
+# 新增配置项（base 中没有定义 host）
 c.Server.host = "10.0.0.1"
 """
 
@@ -139,7 +141,6 @@ print_config(config)
 s2 = Server(config=config)
 print(f"host={s2.host!r}, port={s2.port}, debug={s2.debug}")
 
-exit(0)
 # ============================================================
 # 示例 3: 加载 JSON 配置文件
 # ============================================================
@@ -149,11 +150,12 @@ print("=" * 60)
 
 loader_json = JSONFileConfigLoader("server_config.json", path=CONFIG_DIR)
 config_json = loader_json.load_config()
-print(f"  JSON config 内容: {dict(config_json.Server)}")
+
+# 打印 Config 的内部嵌套字典结构
+print_config(config_json)
 
 s3 = Server(config=config_json)
-print(f"  host={s3.host!r}, port={s3.port}, debug={s3.debug}")
-
+print(f"host={s3.host!r}, port={s3.port}, debug={s3.debug}")
 
 # ============================================================
 # 示例 4: 配置优先级合并
@@ -169,13 +171,16 @@ json_loader = JSONFileConfigLoader("server_config.json", path=CONFIG_DIR)
 json_config = json_loader.load_config()
 
 # merge: json 配置合并到 py 配置中, json 优先级更高
+# 合并规则: a.merge(b) 表示 b 覆盖 a
+# a.merge(b) = 让 b 的值覆盖 a 的值
+# merge() 的参数优先级更高。
 py_config.merge(json_config)
-print(f"  合并后 Server: {dict(py_config.Server)}")
+print("合并后:")
+print_config(py_config)
 
 s4 = Server(config=py_config)
-print(f"  最终: host={s4.host!r}, port={s4.port}, debug={s4.debug}")
-print(f"  (JSON 的 host=127.0.0.1, debug=True 覆盖了 Python 的 host=0.0.0.0, debug=False)")
-
+print("合并后配置:")
+print(f"host={s4.host!r}, port={s4.port}, debug={s4.debug}")
 
 # ============================================================
 # 示例 5: 配置继承 —— load_subconfig
@@ -186,13 +191,14 @@ print("=" * 60)
 
 main_loader = PyFileConfigLoader("main_config.py", path=CONFIG_DIR)
 main_config = main_loader.load_config()
-print(f"  main_config 合并后 Server: {dict(main_config.Server)}")
+print("main_config 合并后 Server:")
+print_config(main_config)
 
 s5 = Server(config=main_config)
 print(f"  name={s5.name!r}, host={s5.host!r}, port={s5.port}")
 print(f"  (name 来自 main, host 来自 main, port 来自 base)")
 
-
+exit(0)
 # ============================================================
 # 示例 6: 使用 Application 自动加载配置文件
 # ============================================================
