@@ -35,8 +35,17 @@ py_config = """\
 # 这是一个 Python 配置文件
 # 变量 c 是 Config 对象
 
+# traitlets.config 提供的 内置函数 ，返回一个空的 Config 对象。
+# 这个函数是在配置脚本的执行环境中自动注入的，所以不需要 import
+
+# 约定的变量名， PyFileConfigLoader 执行完脚本后会读取这个 c 变量。 必须叫 c ，不能改名
+# 告诉 linter（如 flake8）不要报 "c is an unused variable" 之类的警告，
+# 因为这个变量虽然看起来没被使用，但实际上是被 traitlets 框架在幕后读取的
+
+# get_config() 返回一个空 Config 对象
 c = get_config()  # noqa
 
+# 这些语句向 Config 中写入键值对
 c.Server.host = "0.0.0.0"
 c.Server.port = 9999
 c.Server.debug = False
@@ -74,6 +83,7 @@ c.Server.host = "10.0.0.1"
 with open(os.path.join(CONFIG_DIR, "server_config.py"), "w") as f:
     f.write(py_config)
 with open(os.path.join(CONFIG_DIR, "server_config.json"), "w") as f:
+    # 将 Python 对象 序列化并写入文件
     json.dump(json_config, f, indent=2)
 with open(os.path.join(CONFIG_DIR, "base_config.py"), "w") as f:
     f.write(base_py_config)
@@ -82,6 +92,12 @@ with open(os.path.join(CONFIG_DIR, "main_config.py"), "w") as f:
 
 print(f"配置文件已写入: {CONFIG_DIR}/")
 
+# 调试工具: 打印 Config 的内部嵌套字典结构
+def print_config(cfg):
+    """调试工具: 打印 Config 的内部嵌套字典结构"""
+    import json
+    print(f"Config 内部结构:")
+    print(json.dumps(dict(cfg), indent=2, ensure_ascii=False))
 
 # ============================================================
 # 定义一个 Configurable 类
@@ -109,14 +125,21 @@ print("\n" + "=" * 60)
 print("示例 2: Python 配置文件")
 print("=" * 60)
 
+# PyFileConfigLoader 会读取并 执行 configs/server_config.py 这个 Python 脚本
+# 执行后，loader 对象内部就持有了脚本中定义的 c 这个 Config 对象
 loader = PyFileConfigLoader("server_config.py", path=CONFIG_DIR)
 config = loader.load_config()
-print(f"  Python config 内容: {dict(config.Server)}")
 
+# 打印 Config 的内部嵌套字典结构
+print_config(config)
+
+# 使用加载的 config 创建 Server 实例
+# traitlets 会自动将 Config 中的配置值应用到对应的 trait 属性上
+# 这里 config.Server.host 会赋值给 s2.host, config.Server.port 赋值给 s2.port 等
 s2 = Server(config=config)
-print(f"  host={s2.host!r}, port={s2.port}, debug={s2.debug}")
+print(f"host={s2.host!r}, port={s2.port}, debug={s2.debug}")
 
-
+exit(0)
 # ============================================================
 # 示例 3: 加载 JSON 配置文件
 # ============================================================
