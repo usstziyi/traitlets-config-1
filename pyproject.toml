@@ -1,0 +1,11 @@
+[project]
+name = "traitlets-config-tutorial"
+version = "0.1.0"
+description = "traitlets.config Configurable/Application 学习教程"
+requires-python = ">=3.10"
+dependencies = [
+    "traitlets>=5.14",
+]
+
+[project.scripts]
+file-processor = "10_project.cli:main"
