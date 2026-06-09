@@ -116,6 +116,13 @@ class Cat(Animal):
     color = Unicode("白色", help="颜色").tag(config=True)
 
 
+def print_config(cfg):
+    """调试工具: 打印 Config 的内部嵌套字典结构"""
+    import json
+    print(f"Config 内部结构:")
+    print(json.dumps(dict(cfg), indent=2, ensure_ascii=False))
+
+
 cfg2 = Config()
 # 配置父类 Animal —— 会影响所有 Animal 子类
 cfg2.Animal.name = "通用动物"
@@ -124,6 +131,8 @@ cfg2.Animal.age = 1
 # 配置子类特有属性
 cfg2.Dog.breed = "金毛"
 cfg2.Cat.color = "黑色"
+
+print_config(cfg2)
 
 dog = Dog(config=cfg2)
 cat = Cat(config=cfg2)
@@ -136,10 +145,13 @@ cfg2.Dog.name = "旺财"
 dog2 = Dog(config=cfg2)
 print(f"Dog (覆盖后): name={dog2.name!r} (子类覆盖了父类配置)")
 
+# 子类覆盖后再次打印，展示 Config 内部结构的变化
+print_config(cfg2)
+
 # Cat 的名仍是 "通用动物" —— 来自父类 Animal 的配置
 print(f"Cat: name={cat.name!r} (仍来自父类 Animal 配置)")
 
-
+exit(0)
 # ============================================================
 # 示例 4: update_config() 运行时更新配置
 # ============================================================
