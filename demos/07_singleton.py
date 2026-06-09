@@ -115,7 +115,6 @@ cfg.DatabasePool.max_size = 20
 pool = DatabasePool.instance(config=cfg)
 print(f"  host={pool.host!r}, port={pool.port}, max_size={pool.max_size}")
 
-
 # ============================================================
 # 示例 5: 实际场景 —— 全局数据库连接池
 # ============================================================
