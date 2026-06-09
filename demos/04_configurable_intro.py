@@ -49,7 +49,6 @@ db = DatabaseConfigurable()
 print(f"默认值: host={db.host!r}, port={db.port}, "
       f"max_connections={db.max_connections}, internal_state={db.internal_state!r}")
 
-
 # ============================================================
 # 示例 2: 使用 Config 对象注入配置
 # ============================================================
@@ -58,12 +57,31 @@ print("示例 2: Config 对象注入")
 print("=" * 60)
 
 # 创建 Config 对象
+# Config() 是 traitlets 配置系统中用于 批量注入配置值 的核心对象。
+# 它就像一个"配置字典"，让你可以在不修改类定义的情况下，从外部批量设
+# 置 Configurable 类的 trait 值。
+#
+# Config 的工作机制:
+# 1. 点号语法: cfg.ClassName.trait_name = value
+#    其中 ClassName 必须与目标 Configurable 类的名字完全一致
+#    cfg.DatabaseConfigurable.host = "x" 内部存储为:
+#    {"DatabaseConfigurable": {"host": "x"}}
+#    同一个 Config 对象可以同时承载 多个类的多个属性。
+#
+# 2. 选择性生效: 只有被 .tag(config=True) 标记的 trait
+#    才会被配置系统管理。未标记的 trait 即使写了也不会生效。
+#
+# 3. 构造时注入: 通过 DatabaseConfigurable(config=cfg) 传入，
+#    配置值会在 __init__ 时自动注入到对应的 trait，覆盖默认值。
+#
+# 4. 继承: 子类自动继承父类的配置 (见示例 3)
 cfg = Config()
 cfg.DatabaseConfigurable.host = "192.168.1.100"
 cfg.DatabaseConfigurable.port = 3306
 cfg.DatabaseConfigurable.max_connections = 200
+print(f"Config 对象: {cfg}")
 
-# 通过 config= 参数注入
+# 通过 config= 参数在构造时注入配置
 db2 = DatabaseConfigurable(config=cfg)
 print(f"通过 Config 注入: host={db2.host!r}, port={db2.port}, "
       f"max_connections={db2.max_connections}")
@@ -75,7 +93,6 @@ print(f"未配置的 trait: internal_state={db2.internal_state!r}")
 cfg.DatabaseConfigurable.internal_state = "should_not_work"
 db3 = DatabaseConfigurable(config=cfg)
 print(f"尝试配置未标记的 trait: internal_state={db3.internal_state!r} (不起作用)")
-
 
 # ============================================================
 # 示例 3: 配置继承 —— 子类自动继承父类配置
