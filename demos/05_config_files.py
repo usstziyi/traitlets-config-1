@@ -198,7 +198,7 @@ s5 = Server(config=main_config)
 print(f"  name={s5.name!r}, host={s5.host!r}, port={s5.port}")
 print(f"  (name 来自 main, host 来自 main, port 来自 base)")
 
-exit(0)
+
 # ============================================================
 # 示例 6: 使用 Application 自动加载配置文件
 # ============================================================
@@ -206,29 +206,42 @@ print("\n" + "=" * 60)
 print("示例 6: Application.load_config_file()")
 print("=" * 60)
 
-
+# MyApp 继承自 traitlets.config.Application，
+# 这是 traitlets 配置系统的核心入口类。
+# Application 提供了自动发现和加载配置文件的能力，
+# 如从命令行参数、环境变量、配置文件目录等位置加载。
+# MyApp → Application → SingletonConfigurable → Configurable → HasTraits
 class MyApp(Application):
     name = Unicode("myapp")
     description = Unicode("配置文件加载演示")
 
+    # 告诉 Application 这个应用用到了 Server 类，
+    # 这样配置文件中的 c.Server.xxx 段落才能被正确解析
     classes = [Server]
 
+    # 覆写 initialize，在 CLI 解析后手动加载配置文件
+    def initialize(self, argv=None):
+        # 基类只做 parse_command_line
+        super().initialize(argv)  
+        # 加载 .py 和 .json（.json 后加载，优先级更高）                    #    
+        self.load_config_file("server_config", path=[CONFIG_DIR])  
+
     def start(self):
-        # 获取配置并创建 Server
         srv = Server(config=self.config)
         print(f"  Application 自动加载的配置:")
-        print(f"    host={srv.host!r}, port={srv.port}, debug={srv.debug}, name={srv.name!r}")
+        print(f"    name={srv.name!r}, host={srv.host!r}, port={srv.port}, debug={srv.debug}")
 
 
-# 通过 class-level 属性设置配置路径和文件名
-# 然后直接构造实例 (避免 singleton 冲突)
-MyApp.config_file_paths = [CONFIG_DIR]
-MyApp.config_file_name = "server_config"
+# 手动构造实例，依次调用 initialize() → start()
 app = MyApp()
-app.initialize([])
+app.initialize()   # Application 自动取 sys.argv[1:] 解析 CLI 参数
+app.start()              # 执行业务逻辑
 print("  Application.load_config_file 加载完成")
 
 server = Server(config=app.config)
-print(f"  Server: name={server.name!r}, host={server.host!r}, port={server.port}")
+print(f"    Server: name={server.name!r}, host={server.host!r}, port={server.port}")
 
 print("\n>>> Demo 5 结束: 掌握了 Python 和 JSON 两种配置文件方式")
+
+# 示例 6: 从命令行参数覆盖配置
+# uv run python demos/05_config_files.py --Server.port=6666
