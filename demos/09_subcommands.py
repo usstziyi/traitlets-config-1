@@ -108,19 +108,25 @@ class TaskApp(Application):
   task --help
 """
 
+    # classes = [...] 只在有 独立于 Application 的 Configurable 类 需要向配置系统注册时才需要写。 
+    # DatabaseApp 没有这样的类，所以不需要。
     classes = [TaskConfig]
 
     aliases = {
         "assignee": "TaskConfig.assignee",
     }
 
+    # 整个过程 traitlets 帮你完成了"类 → 实例"的转换，你只需要提供类引用即可
     subcommands = {
         "add": (AddTaskApp, "添加新任务"),
         "list": (ListTaskApp, "列出所有任务"),
     }
 
     def start(self):
-        self.print_help()
+        if self.subapp is not None:
+            self.subapp.start()
+        else:
+            self.print_help()
 
 
 # ============================================================
@@ -160,7 +166,10 @@ class DatabaseApp(Application):
     }
 
     def start(self):
-        self.print_help()
+        if self.subapp is not None:
+            self.subapp.start()
+        else:
+            self.print_help()
 
 
 # ============================================================
@@ -184,7 +193,10 @@ class MainApp(Application):
     }
 
     def start(self):
-        self.print_help()
+        if self.subapp is not None:
+            self.subapp.start()
+        else:
+            self.print_help()
 
 
 # ============================================================
