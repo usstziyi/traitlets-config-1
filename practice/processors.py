@@ -111,7 +111,11 @@ def add_line_numbers_to_lines(lines):
     width = len(str(len(lines)))
     return [f"{i:0{width}d}| {line}" for i, line in enumerate(lines, 1)]
 
-
+# processors.py 刻意 没有 import config.py 中的类，
+# 这是一个有意的架构选择——保持纯逻辑模块对配置系统的 零依赖
+# 尽管没有类型注解， pipeline 内部通过 鸭子类型 访问它们。
+# 每个 trait 通过 traitlets 的元类机制，被代理为普通的 Python 类型
+# 这正是 traitlets 的设计： 声明时用类型约束，访问时像普通属性 。
 def pipeline(read_cfg, transform_cfg, output_cfg):
     """
     执行完整的处理流水线

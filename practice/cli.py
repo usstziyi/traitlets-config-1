@@ -77,6 +77,7 @@ class ProcessApp(Application):
   file-processor process --generate-config > file_processor_config.py
 """
 
+    # 按需暴露（最小权限原则）,全部三个配置类都需要暴露
     classes = [ReadConfig, TransformConfig, OutputConfig]
 
     # ---- Aliases: 简化常用参数 ----
@@ -91,16 +92,14 @@ class ProcessApp(Application):
         "prefix": "OutputConfig.output_prefix",
     }
 
-    # 特殊: 列表类型的 alias 需要特殊处理
-    aliases["grep-filter"] = "TransformConfig.grep_filter"
-    aliases["transforms"] = "TransformConfig.transforms"
-
     # ---- Flags: 布尔开关 ----
     flags = {
         "dry-run": (
             {"OutputConfig": {"dry_run": True}},
             "演练模式: 只预览, 不写入文件",
         ),
+        # OutputConfig.verbose 是 业务配置 ——它可以写在配置文件里，比如始终开启详细输出
+        # log_level 是 日志系统配置 ——它控制的是日志基础设施的级别，独立于业务逻辑
         "verbose": (
             {"ProcessApp": {"log_level": logging.INFO}, "OutputConfig": {"verbose": True}},
             "详细输出",
@@ -134,6 +133,7 @@ class ProcessApp(Application):
         logger.info("文件模式: %s", read_cfg.file_pattern)
         logger.info("转换操作: %s", transform_cfg.transforms or "(无)")
 
+        # 这一行是整个 ProcessApp 的 核心执行点 ——把配置注入纯业务逻辑 pipeline
         results = pipeline(read_cfg, transform_cfg, output_cfg)
 
         if not results:
@@ -192,6 +192,7 @@ class ListApp(Application):
   file-processor list --input ./data --pattern "*.txt" --exclude "test_*"
 """
 
+    # 按需暴露（最小权限原则）,只需要读文件配置
     classes = [ReadConfig]
 
     aliases = {
@@ -246,6 +247,7 @@ class StatsApp(Application):
   file-processor stats --input ./logs --pattern "*.log"
 """
 
+    # 按需暴露（最小权限原则）,只需要读文件配置
     classes = [ReadConfig]
 
     aliases = {
@@ -340,11 +342,16 @@ class FileProcessorApp(Application):
   file-processor process --help
 """
 
+    # 按需暴露（最小权限原则）,父级本身不处理业务逻辑
+    # classes = []
+
     subcommands = {
         "process": (ProcessApp, "执行文件处理流水线"),
         "list": (ListApp, "列出输入目录中匹配的文件"),
         "stats": (StatsApp, "显示文件统计信息"),
     }
+
+    show_version = Bool(False).tag(config=True)
 
     # 顶层 flags
     flags = {
@@ -354,9 +361,8 @@ class FileProcessorApp(Application):
         ),
     }
 
-    show_version = Bool(False).tag(config=True)
-
     def start(self):
+        # 如果有子应用，就转发给子应用的 start()
         if self.subapp is not None:
             return self.subapp.start()
         if self.show_version:
@@ -375,3 +381,29 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+"""
+┌─────────────────────────────────────────────────┐
+│  cli.py (Application 层)                         │
+│  ┌───────────┐ ┌──────────┐ ┌───────────────┐   │
+│  │ProcessApp │ │ ListApp  │ │FileProcessorApp│   │
+│  │classes=[  │ │classes=  │ │ subcommands=  │   │
+│  │  Read,    │ │ [Read]   │ │  {process,    │   │
+│  │  Transform│ │          │ │   list, stats} │   │
+│  │  Output]  │ │          │ │               │   │
+│  └─────┬─────┘ └────┬─────┘ └───────┬───────┘   │
+│        │            │               │            │
+│   wires CLI args → Config objects   │            │
+│        │            │               │            │
+├────────┼────────────┼───────────────┼────────────┤
+│ config.py (Configurable 层)          │            │
+│  ReadConfig / TransformConfig / OutputConfig     │
+│  定义"什么可以被配置" + 验证规则                  │
+│        │                                         │
+├────────┼─────────────────────────────────────────┤
+│ processors.py (纯逻辑层)                          │
+│  collect_files / pipeline / apply_transform ...  │
+│  接收 Config 对象 → 执行纯业务逻辑                │
+└─────────────────────────────────────────────────┘
+"""
