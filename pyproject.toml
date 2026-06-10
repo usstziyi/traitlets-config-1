@@ -6,3 +6,9 @@ requires-python = ">=3.10"
 dependencies = [
     "traitlets>=5.14",
 ]
+
+[tool.uv]
+package = true
+
+[project.scripts]
+file-processor = "practice.cli:main"
