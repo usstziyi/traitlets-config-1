@@ -42,15 +42,24 @@ class HelloApp(Application):
 
     def start(self):
         print("Hello from HelloApp!")
+    
+
+# print("HelloApp.class_traits():")
+# for name, trait in HelloApp.class_traits().items():
+#     print(f"  {name:20s} {trait.__class__.__name__}")
+# print()
+# print("HelloApp.class_own_traits():")
+# for name, trait in HelloApp.class_own_traits().items():
+#     print(f"  {name:20s} {trait.__class__.__name__}")
 
 
 if len(sys.argv) > 1 and sys.argv[1] == "--run-hello":
     print("=" * 60)
     print("示例 1: 最简 Application")
     print("=" * 60)
+    # 它内部会完成完整的生命周期： 解析 CLI → 加载配置文件 → 初始化日志 → 调用 start()
     HelloApp.launch_instance(sys.argv[2:] if len(sys.argv) > 2 else [])
-    print("\n(注意: launch_instance 后程序可能直接退出)\n")
-
+    
 
 # ============================================================
 # 示例 2: 带 Configurable 的 Application
@@ -108,6 +117,7 @@ if len(sys.argv) > 1 and sys.argv[1] == "--run-report":
     ReportApp.launch_instance(sys.argv[2:] if len(sys.argv) > 2 else [])
     print()
 
+# uv run python demos/08_application.py --run-report  --input main.c --verbose
 
 # ============================================================
 # 无参数时显示使用说明
